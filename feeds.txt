@@ -3,4 +3,4 @@
 # Example:
 # https://example.com/feed.xml
 https://git.projectnightcrawler.dev/NightmareEclipse.rss
-https://deadeclipse666.blogspot.com/feeds/posts/default
+#https://deadeclipse666.blogspot.com/feeds/posts/default
