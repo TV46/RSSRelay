@@ -10,7 +10,7 @@ import re
 
 import feedparser
 
-HEADING_PATTERN = re.compile(r"(?is)<h(?P<level>[1-6])[^>]*>(.*?)</h(?P=level)>")
+HEADING_PATTERN = re.compile(r"(?is)<h(?P<level>[1-6])[^>]*>(?P<content>.*?)</h(?P=level)>")
 TAG_PATTERN = re.compile(r"(?is)<[^>]+>")
 BREAK_PATTERN = re.compile(r"(?i)<br\s*/?>")
 BLOCK_END_PATTERN = re.compile(r"(?i)</(p|div|li|ul|ol|blockquote|section|article|h[1-6])>")
@@ -42,7 +42,7 @@ def html_to_text(value: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = [line.strip() for line in text.split("\n")]
     text = "\n".join(line for line in lines if line)
-    # Keep at most one blank line between blocks for plain-text readers.
+    # Keep at most one empty line between blocks for plain-text readers.
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
@@ -51,11 +51,11 @@ def heading_from_html(value: str) -> str:
     match = HEADING_PATTERN.search(value or "")
     if not match:
         return ""
-    return html_to_text(match.group(2))
+    return html_to_text(match.group("content"))
 
 
 def without_first_heading(value: str) -> str:
-    """Remove the first heading element to avoid title duplication in descriptions."""
+    """Remove the first heading element and its text to avoid title duplication."""
     return HEADING_PATTERN.sub("", value or "", count=1)
 
 
