@@ -4,10 +4,16 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 from email.utils import format_datetime
-from html import escape
+from html import escape, unescape
 from pathlib import Path
+import re
 
 import feedparser
+
+HEADING_PATTERN = re.compile(r"(?is)<h(?P<level>[1-6])[^>]*>(?P<content>.*?)</h(?P=level)>")
+TAG_PATTERN = re.compile(r"(?is)<[^>]+>")
+BREAK_PATTERN = re.compile(r"(?i)<br\s*/?>")
+BLOCK_END_PATTERN = re.compile(r"(?i)</(p|div|li|ul|ol|blockquote|section|article|h[1-6])>")
 
 
 def load_feed_urls(path: Path) -> list[str]:
@@ -28,16 +34,44 @@ def parse_entry_date(entry: dict) -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
 
 
+def html_to_text(value: str) -> str:
+    text = unescape(value or "")
+    text = BREAK_PATTERN.sub("\n", text)
+    text = BLOCK_END_PATTERN.sub("\n", text)
+    text = TAG_PATTERN.sub("", text)
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.strip() for line in text.split("\n")]
+    text = "\n".join(line for line in lines if line)
+    # Keep at most one empty line between blocks for plain-text readers.
+    text = re.sub(r"\n{2,}", "\n\n", text)
+    return text.strip()
+
+
+def heading_from_html(value: str) -> str:
+    match = HEADING_PATTERN.search(value or "")
+    if not match:
+        return ""
+    return html_to_text(match.group("content"))
+
+
+def without_first_heading(value: str) -> str:
+    """Remove the first heading element from HTML and return the modified content."""
+    return HEADING_PATTERN.sub("", value or "", count=1)
+
+
 def aggregate_entries(urls: list[str]) -> list[dict]:
     entries: list[dict] = []
     for url in urls:
         parsed = feedparser.parse(url)
         for entry in parsed.entries:
-            title = entry.get("title") or "Untitled"
+            raw_title = entry.get("title") or ""
             link = entry.get("link") or url
-            summary = entry.get("summary") or entry.get("description") or ""
+            raw_summary = entry.get("summary") or entry.get("description") or ""
+            heading_title = heading_from_html(raw_summary)
+            title = heading_title or html_to_text(raw_title) or "Untitled"
+            summary = html_to_text(without_first_heading(raw_summary))
             published = parse_entry_date(entry)
-            source = parsed.feed.get("title") or url
+            source = html_to_text(parsed.feed.get("title") or "") or url
             entries.append(
                 {
                     "title": title,
@@ -65,12 +99,19 @@ def build_rss(entries: list[dict], channel_title: str = "RSSRelay Combined Feed"
     ]
 
     for entry in entries:
+        description = entry["summary"]
+        source_line = f"Source: {entry['source']}" if entry["source"] else ""
+        if description and source_line:
+            description = f"{description}\n\n{source_line}"
+        elif source_line:
+            description = source_line
+
         lines.extend(
             [
                 "    <item>",
                 f"      <title>{escape(entry['title'])}</title>",
                 f"      <link>{escape(entry['link'])}</link>",
-                f"      <description><![CDATA[{entry['summary']}<br/><br/>Source: {escape(entry['source'])}]]></description>",
+                f"      <description>{escape(description)}</description>",
                 f"      <pubDate>{format_datetime(entry['published'])}</pubDate>",
                 "    </item>",
             ]
