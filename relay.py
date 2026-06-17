@@ -41,7 +41,9 @@ def html_to_text(value: str) -> str:
     text = TAG_PATTERN.sub("", text)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = [line.strip() for line in text.split("\n")]
-    return "\n".join(line for line in lines if line)
+    text = "\n".join(line for line in lines if line)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def heading_from_html(value: str) -> str:
@@ -52,6 +54,7 @@ def heading_from_html(value: str) -> str:
 
 
 def without_first_heading(value: str) -> str:
+    """Remove the first heading element to avoid title duplication in descriptions."""
     return HEADING_PATTERN.sub("", value or "", count=1)
 
 
@@ -67,7 +70,7 @@ def aggregate_entries(urls: list[str]) -> list[dict]:
             title = heading_title or html_to_text(raw_title) or "Untitled"
             summary = html_to_text(without_first_heading(raw_summary))
             published = parse_entry_date(entry)
-            source = html_to_text(parsed.feed.get("title") or url)
+            source = html_to_text(parsed.feed.get("title") or "") or url
             entries.append(
                 {
                     "title": title,
