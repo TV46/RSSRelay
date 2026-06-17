@@ -10,7 +10,7 @@ import re
 
 import feedparser
 
-HEADING_PATTERN = re.compile(r"(?is)<h([1-6])[^>]*>(.*?)</h\1>")
+HEADING_PATTERN = re.compile(r"(?is)<h(?P<level>[1-6])[^>]*>(.*?)</h(?P=level)>")
 TAG_PATTERN = re.compile(r"(?is)<[^>]+>")
 BREAK_PATTERN = re.compile(r"(?i)<br\s*/?>")
 BLOCK_END_PATTERN = re.compile(r"(?i)</(p|div|li|ul|ol|blockquote|section|article|h[1-6])>")
@@ -42,6 +42,7 @@ def html_to_text(value: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     lines = [line.strip() for line in text.split("\n")]
     text = "\n".join(line for line in lines if line)
+    # Keep at most one blank line between blocks for plain-text readers.
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
