@@ -43,7 +43,7 @@ def html_to_text(value: str) -> str:
     lines = [line.strip() for line in text.split("\n")]
     text = "\n".join(line for line in lines if line)
     # Keep at most one empty line between blocks for plain-text readers.
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"\n{2,}", "\n\n", text)
     return text.strip()
 
 
@@ -55,7 +55,7 @@ def heading_from_html(value: str) -> str:
 
 
 def without_first_heading(value: str) -> str:
-    """Remove the first heading element and its text to avoid title duplication."""
+    """Remove the first heading element from HTML and return the modified content."""
     return HEADING_PATTERN.sub("", value or "", count=1)
 
 
