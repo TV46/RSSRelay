@@ -23,6 +23,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+      
+      - name: Remove file old feed
+        run: rm -f feed.rss
 
       - name: Build combined RSS feed
         run: python relay.py
