@@ -4,3 +4,4 @@
 # https://example.com/feed.xml
 https://git.projectnightcrawler.dev/NightmareEclipse.rss
 https://deadeclipse666.blogspot.com/feeds/posts/default
+https://blog.projectnightcrawler.dev/index.xml
