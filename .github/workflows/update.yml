@@ -2,7 +2,7 @@ name: Update Combined RSS Feed
 
 on:
   schedule:
-    - cron: "46 * * * *"
+    - cron: "43 * * * *"
   workflow_dispatch:
 
 permissions:
